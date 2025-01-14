@@ -1,14 +1,14 @@
 // content.js
 
-// Constants for class names and selectors
 const TOGGLE_BUTTON_CLASS = 'toggle-password-custom-button';
 const PASSWORD_FIELD_SELECTOR = 'input[type="password"], input[type="text"][data-password="true"]';
 
-// Variables to store extension settings
 let extensionEnabled = true;
 let showPasswordsByDefault = false;
 
-// Function to toggle password visibility
+/**
+ * Toggle the password field’s visibility
+ */
 function togglePasswordVisibility(field, button) {
   if (field.type === 'password') {
     field.type = 'text';
@@ -19,17 +19,26 @@ function togglePasswordVisibility(field, button) {
   }
 }
 
-// Function to remove existing toggle-password buttons
-function removeExistingToggleButtons() {
-  const existingButtons = document.querySelectorAll('.toggle-password');
-  existingButtons.forEach((button) => {
+/**
+ * Remove only the toggle buttons that our extension created
+ */
+function removeOurToggleButtons() {
+  const toggleButtons = document.querySelectorAll(`.${TOGGLE_BUTTON_CLASS}`);
+  toggleButtons.forEach((button) => {
+    const inputField = button.previousSibling;
+    if (inputField && inputField.tagName === 'INPUT') {
+      inputField.type = 'password';
+      delete inputField.dataset.password; // Remove our marker
+    }
     button.remove();
   });
 }
 
-// Function to add a custom toggle button to a password field
+/**
+ * Add a custom toggle button next to a password field
+ */
 function addCustomToggleButton(field) {
-  // Check if our custom toggle button already exists
+  // If there’s already a next-sibling button with our custom class, do not duplicate
   if (
     field.nextSibling &&
     field.nextSibling.classList &&
@@ -38,52 +47,55 @@ function addCustomToggleButton(field) {
     return;
   }
 
-  // Remove existing toggle-password buttons added by the website
-  removeExistingToggleButtons();
-
-  // Set password visibility based on the setting
-  field.type = showPasswordsByDefault ? 'text' : 'password';
-
-  // Mark the field to identify that it's being managed by the extension
+  // Mark the field so we know it's managed by our extension
   field.dataset.password = 'true';
 
   // Create the toggle button
   const toggleButton = document.createElement('button');
+  // Button text depends on whether we are going to show or hide
   toggleButton.textContent = showPasswordsByDefault ? 'Hide' : 'Show';
   toggleButton.type = 'button';
   toggleButton.classList.add(TOGGLE_BUTTON_CLASS);
 
-  // Event listener to toggle password visibility
+  // Click event: toggle visibility
   toggleButton.addEventListener('click', () => {
     togglePasswordVisibility(field, toggleButton);
   });
 
   // Insert the toggle button after the password field
   field.parentNode.insertBefore(toggleButton, field.nextSibling);
+
+  // If "show passwords by default" is on, wait a short time before revealing.
+  // This delay allows 1Password or other password managers to detect/fill the input
+  // while it is still type="password."
+  if (showPasswordsByDefault) {
+    // Only switch to "text" if it’s still "password" after the delay
+    setTimeout(() => {
+      if (field.type === 'password') {
+        field.type = 'text';
+        toggleButton.textContent = 'Hide';
+      }
+    }, 500);
+  }
 }
 
-// Function to add custom toggle buttons to all password fields
 function addCustomToggleButtons() {
   const passwordFields = document.querySelectorAll(PASSWORD_FIELD_SELECTOR);
-
   passwordFields.forEach((field) => {
     addCustomToggleButton(field);
   });
 }
 
-// Function to remove custom toggle buttons
+/**
+ * Remove the custom toggle buttons and restore password fields
+ */
 function removeCustomToggleButtons() {
-  const toggleButtons = document.querySelectorAll(`.${TOGGLE_BUTTON_CLASS}`);
-  toggleButtons.forEach((button) => {
-    const inputField = button.previousSibling;
-    if (inputField && inputField.tagName === 'INPUT') {
-      inputField.type = 'password';
-      delete inputField.dataset.password; // Remove the custom data attribute
-    }
-    button.remove();
-  });
+  removeOurToggleButtons();
 }
 
+/**
+ * Inject a CSS file for styling (optional)
+ */
 function injectStylesheet() {
   if (!document.getElementById('toggle-password-styles')) {
     const styleElement = document.createElement('link');
@@ -94,7 +106,7 @@ function injectStylesheet() {
   }
 }
 
-// Initialize the extension based on the stored settings
+
 function init() {
   injectStylesheet();
   chrome.storage.sync.get(['extensionEnabled', 'showPasswordsByDefault'], (result) => {
@@ -109,14 +121,12 @@ function init() {
   });
 }
 
-// Observe DOM changes to handle dynamically added password fields
+// Watch for DOM changes (new fields, etc.)
 const observer = new MutationObserver((mutations) => {
-  if (!extensionEnabled) {
-    return;
-  }
+  if (!extensionEnabled) return;
 
   mutations.forEach((mutation) => {
-    // Handle added nodes
+    // For newly added nodes, check if any are (or contain) password fields
     mutation.addedNodes.forEach((node) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
         if (node.matches && node.matches('input')) {
@@ -127,8 +137,9 @@ const observer = new MutationObserver((mutations) => {
             addCustomToggleButton(node);
           }
         } else {
-          const passwordFields = node.querySelectorAll(PASSWORD_FIELD_SELECTOR);
-          if (passwordFields.length > 0) {
+          // Check descendants
+          const passwordFields = node.querySelectorAll?.(PASSWORD_FIELD_SELECTOR);
+          if (passwordFields?.length) {
             passwordFields.forEach((field) => {
               addCustomToggleButton(field);
             });
@@ -137,23 +148,24 @@ const observer = new MutationObserver((mutations) => {
       }
     });
 
-    // Handle attribute changes (e.g., type changes to 'password')
+    // If an input changes type to "password" or "text" with our data attr
     if (
       mutation.type === 'attributes' &&
       mutation.attributeName === 'type' &&
       mutation.target.tagName === 'INPUT'
     ) {
+      const input = mutation.target;
       if (
-        mutation.target.type === 'password' ||
-        (mutation.target.type === 'text' && mutation.target.dataset.password === 'true')
+        input.type === 'password' ||
+        (input.type === 'text' && input.dataset.password === 'true')
       ) {
-        addCustomToggleButton(mutation.target);
+        addCustomToggleButton(input);
       }
     }
   });
 });
 
-// Start observing the document body for changes
+// Begin observing body for changes
 observer.observe(document.body, {
   childList: true,
   subtree: true,
@@ -161,11 +173,10 @@ observer.observe(document.body, {
   attributeFilter: ['type'],
 });
 
-// Listen for messages from the popup to update settings
+// Listen for messages from the popup to update our settings
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'update') {
-    const previousEnabledState = extensionEnabled;
-
+    const wasEnabled = extensionEnabled;
     extensionEnabled = request.extensionEnabled !== false;
     showPasswordsByDefault = request.showPasswordsByDefault === true;
 
@@ -177,5 +188,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Run the initialization
 init();
