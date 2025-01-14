@@ -1,0 +1,22 @@
+/* content.css */
+
+.toggle-password-custom-button {
+    margin-left: 5px;
+    padding: 5px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #00CDAF; /* Blue background */
+    border: 1px solid #B0B0B0; /* Grey border */
+    border-radius: 3px;
+    color: #000000; /* Black text */
+    font-family: inherit;
+  }
+  
+  .toggle-password-custom-button:hover {
+    background-color: #003d34; /* Slightly darker Blue on hover */
+  }
+  
+  .toggle-password-custom-button:focus {
+    outline: none;
+  }
+  
