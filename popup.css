@@ -7,51 +7,51 @@ body {
     min-width: 220px;
     background-color: #515151;
   }
-  
+
   .container {
     padding: 15px;
   }
-  
+
   h2 {
     font-size: 16px;
     margin-bottom: 15px;
-    color: #00CDAF; /* Updated to use the Blue color */
+    color: #00CDAF;
     text-align: center;
   }
-  
+
   label {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
     font-size: 14px;
-    color: #ffffff; /* Updated label text color to Black */
+    color: #ffffff;
   }
-  
+
   input[type="checkbox"] {
     margin-right: 10px;
     transform: scale(1.2);
-    accent-color: #00CDAF; /* Updated checkbox accent color to Blue */
+    accent-color: #00CDAF;
   }
-  
+
   input[type="checkbox"]:focus {
     outline: none;
   }
-  
+
   button {
     width: 100%;
     padding: 10px;
-    background-color: #00CDAF; /* Updated button background color to Blue */
-    color: #ffffff; /* White text for contrast */
-    border: 1px solid #B0B0B0; /* Grey border */
+    background-color: #00CDAF;
+    color: #ffffff;
+    border: 1px solid #B0B0B0;
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
   }
-  
+
   button:hover {
-    background-color: #0099CC; /* Slightly darker shade of Blue on hover */
+    background-color: #0099CC;
   }
-  
+
   button:focus {
     outline: none;
   }
