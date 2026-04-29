@@ -1,21 +1,19 @@
-
 .toggle-password-custom-button {
-    margin-left: 5px;
-    padding: 5px 8px;
-    font-size: 12px;
-    cursor: pointer;
-    background-color: #00CDAF;
-    border: 1px solid #B0B0B0;
-    border-radius: 3px;
-    color: #000000;
-    font-family: inherit;
-  }
+  all: unset;
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 0.8em;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.55;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  pointer-events: auto;
+}
 
-  .toggle-password-custom-button:hover {
-    background-color: #003d34;
-  }
-
-  .toggle-password-custom-button:focus {
-    outline: none;
-  }
-  
+.toggle-password-custom-button:hover,
+.toggle-password-custom-button:focus-visible {
+  opacity: 1;
+}

@@ -3,8 +3,10 @@ const PASSWORD_FIELD_SELECTOR = 'input[type="password"], input[type="text"][data
 
 let extensionEnabled = true
 let showPasswordsByDefault = false
+let ourChange = false
 
 function togglePasswordVisibility(field, button) {
+  ourChange = true
   if (field.type === 'password') {
     field.type = 'text'
     button.textContent = 'Hide'
@@ -12,6 +14,7 @@ function togglePasswordVisibility(field, button) {
     field.type = 'password'
     button.textContent = 'Show'
   }
+  setTimeout(() => { ourChange = false }, 0)
 }
 
 function removeOurToggleButtons() {
@@ -39,7 +42,9 @@ function addCustomToggleButton(field) {
   toggleButton.type = 'button'
   toggleButton.classList.add(TOGGLE_BUTTON_CLASS)
   if (showPasswordsByDefault) {
+    ourChange = true
     field.type = 'text'
+    setTimeout(() => { ourChange = false }, 0)
     toggleButton.textContent = 'Hide'
   } else {
     toggleButton.textContent = 'Show'
@@ -117,10 +122,12 @@ const observer = new MutationObserver((mutations) => {
         input.nextSibling.classList &&
         input.nextSibling.classList.contains(TOGGLE_BUTTON_CLASS)
 
-      if (input.type === 'password' && hasOurButton) {
+      if (input.type === 'password' && hasOurButton && !ourChange) {
         // Site (e.g. React re-render) reset type back to password — re-assert our state
         if (showPasswordsByDefault) {
+          ourChange = true
           input.type = 'text'
+          setTimeout(() => { ourChange = false }, 0)
           input.nextSibling.textContent = 'Hide'
         } else {
           input.nextSibling.textContent = 'Show'
@@ -147,6 +154,7 @@ function applyVisibilityToExistingButtons() {
   passwordFields.forEach((field) => {
     const button = field.nextSibling
     if (button && button.classList && button.classList.contains(TOGGLE_BUTTON_CLASS)) {
+      ourChange = true
       if (showPasswordsByDefault) {
         field.type = 'text'
         button.textContent = 'Hide'
@@ -154,6 +162,7 @@ function applyVisibilityToExistingButtons() {
         field.type = 'password'
         button.textContent = 'Show'
       }
+      setTimeout(() => { ourChange = false }, 0)
     }
   })
 }
