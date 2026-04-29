@@ -36,35 +36,18 @@ function addCustomToggleButton(field) {
   }
   field.dataset.password = 'true'
   const toggleButton = document.createElement('button')
-  toggleButton.textContent = showPasswordsByDefault ? 'Hide' : 'Show'
   toggleButton.type = 'button'
   toggleButton.classList.add(TOGGLE_BUTTON_CLASS)
+  if (showPasswordsByDefault) {
+    field.type = 'text'
+    toggleButton.textContent = 'Hide'
+  } else {
+    toggleButton.textContent = 'Show'
+  }
   toggleButton.addEventListener('click', () => {
     togglePasswordVisibility(field, toggleButton)
   })
   field.parentNode.insertBefore(toggleButton, field.nextSibling)
-  if (showPasswordsByDefault && field.type === 'password') {
-    field.addEventListener('input', () => {
-      if (field.type === 'password') {
-        field.type = 'text'
-        toggleButton.textContent = 'Hide'
-      }
-    })
-
-    field.addEventListener('focus', () => {
-      if (field.value && field.type === 'password') {
-        field.type = 'text'
-        toggleButton.textContent = 'Hide'
-      }
-    })
-
-    setTimeout(() => {
-      if (field.value && field.type === 'password') {
-        field.type = 'text';
-        toggleButton.textContent = 'Hide';
-      }
-    }, 500);
-  }
 }
 
 function addCustomToggleButtons() {
@@ -92,7 +75,7 @@ function init() {
   injectStylesheet()
   chrome.storage.sync.get(['extensionEnabled', 'showPasswordsByDefault'], (result) => {
     extensionEnabled = result.extensionEnabled !== false
-    showPasswordsByDefault = result.showPasswordsByDefault === true
+    showPasswordsByDefault = result.showPasswordsByDefault !== false
     if (extensionEnabled) {
       addCustomToggleButtons()
     } else {
@@ -129,7 +112,20 @@ const observer = new MutationObserver((mutations) => {
       mutation.target.tagName === 'INPUT'
     ) {
       const input = mutation.target
-      if (
+      const hasOurButton =
+        input.nextSibling &&
+        input.nextSibling.classList &&
+        input.nextSibling.classList.contains(TOGGLE_BUTTON_CLASS)
+
+      if (input.type === 'password' && hasOurButton) {
+        // Site (e.g. React re-render) reset type back to password — re-assert our state
+        if (showPasswordsByDefault) {
+          input.type = 'text'
+          input.nextSibling.textContent = 'Hide'
+        } else {
+          input.nextSibling.textContent = 'Show'
+        }
+      } else if (
         input.type === 'password' ||
         (input.type === 'text' && input.dataset.password === 'true')
       ) {
@@ -146,13 +142,29 @@ observer.observe(document.body, {
   attributeFilter: ['type'],
 })
 
+function applyVisibilityToExistingButtons() {
+  const passwordFields = document.querySelectorAll(PASSWORD_FIELD_SELECTOR)
+  passwordFields.forEach((field) => {
+    const button = field.nextSibling
+    if (button && button.classList && button.classList.contains(TOGGLE_BUTTON_CLASS)) {
+      if (showPasswordsByDefault) {
+        field.type = 'text'
+        button.textContent = 'Hide'
+      } else {
+        field.type = 'password'
+        button.textContent = 'Show'
+      }
+    }
+  })
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'update') {
-    const wasEnabled = extensionEnabled
     extensionEnabled = request.extensionEnabled !== false
-    showPasswordsByDefault = request.showPasswordsByDefault === true
+    showPasswordsByDefault = request.showPasswordsByDefault !== false
     if (extensionEnabled) {
       addCustomToggleButtons()
+      applyVisibilityToExistingButtons()
     } else {
       removeCustomToggleButtons()
     }

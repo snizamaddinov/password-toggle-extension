@@ -3,10 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleExtension = document.getElementById('toggle-extension');
     const showPasswords = document.getElementById('show-passwords');
   
-    // Get the current state from storage
+    // Get the current state from storage, writing defaults on first install
     chrome.storage.sync.get(['extensionEnabled', 'showPasswordsByDefault'], (result) => {
-      toggleExtension.checked = result.extensionEnabled !== false;
-      showPasswords.checked = result.showPasswordsByDefault !== false;
+      const isEnabled = result.extensionEnabled !== false;
+      const showByDefault = result.showPasswordsByDefault !== false;
+      toggleExtension.checked = isEnabled;
+      showPasswords.checked = showByDefault;
+      if (result.extensionEnabled === undefined || result.showPasswordsByDefault === undefined) {
+        chrome.storage.sync.set({ extensionEnabled: isEnabled, showPasswordsByDefault: showByDefault });
+      }
     });
   
     // Function to update the content script with new settings
